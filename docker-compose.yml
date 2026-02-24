@@ -1,0 +1,31 @@
+services:
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_ENABLE_AUTH=false
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - APIFY_API_KEY=${APIFY_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - GOOGLE_SHEET_ID=${GOOGLE_SHEET_ID}
+    volumes:
+      - ./data:/home/node/.n8n
+    restart: always
+
+  vinted-poster:
+    build:
+      context: /Users/shaun/fb-vinted-arbitrage/vinted-poster
+      dockerfile: Dockerfile
+    container_name: vinted-poster
+    ports:
+      - "3001:3001"
+    environment:
+      - VINTED_EMAIL=${VINTED_EMAIL}
+      - VINTED_PASSWORD=${VINTED_PASSWORD}
+    volumes:
+      - /Users/shaun/fb-vinted-arbitrage/vinted-poster/sessions:/app/sessions
+    restart: always
