@@ -18,7 +18,7 @@ services:
 
   vinted-poster:
     build:
-      context: /Users/shaun/fb-vinted-arbitrage/vinted-poster
+      context: /Users/shaun/Dropbox/My Mac (Shaun's MacBook Pro)/Local-Repo/REPOs/fb-vinted-arbitrage/vinted-poster
       dockerfile: Dockerfile
     container_name: vinted-poster
     ports:
@@ -27,5 +27,5 @@ services:
       - VINTED_EMAIL=${VINTED_EMAIL}
       - VINTED_PASSWORD=${VINTED_PASSWORD}
     volumes:
-      - /Users/shaun/fb-vinted-arbitrage/vinted-poster/sessions:/app/sessions
+      - /Users/shaun/Dropbox/My Mac (Shaun's MacBook Pro)/Local-Repo/REPOs/fb-vinted-arbitrage/vinted-poster/sessions:/app/sessions
     restart: always
