@@ -1,0 +1,246 @@
+{
+  "name": "4 - Backup Gmail Scan",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "sched-4",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "sender": "vinted",
+          "subject": "prodej",
+          "receivedAfter": "={{ $today.toISO() }}"
+        },
+        "returnAll": false,
+        "limit": 50,
+        "options": {}
+      },
+      "id": "gmail-search-4",
+      "name": "Search Vinted Sale Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [470, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-emails-exist",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-emails-found-4",
+      "name": "Any Emails Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches-4",
+      "name": "Process One at a Time",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [910, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nconst emails = Array.isArray($input.all()) ? $input.all() : [$input.first()];\nfor (const email of emails) {\n  const subject = email.json.subject || '';\n  const snippet = email.json.snippet || '';\n  const body = email.json.text || email.json.html || '';\n\n  // Try to extract item title from subject (Vinted subjects are like \"Tvůj item 'TITLE' byl prodán\")\n  const titleMatch = subject.match(/'([^']+)'/) || subject.match(/\"([^\"]+)\"/);\n  const title = titleMatch ? titleMatch[1] : snippet.substring(0, 60);\n\n  // Try to extract price from body/snippet\n  const priceMatch = (body + snippet).match(/(\\d+)\\s*(?:Kč|CZK|czk|kč)/i);\n  const salePrice = priceMatch ? parseInt(priceMatch[1]) : 0;\n\n  // Try to extract Vinted item ID from email links\n  const vintedIdMatch = (body + snippet).match(/vinted\\.cz\\/items\\/(\\d+)/);\n  const vintedId = vintedIdMatch ? vintedIdMatch[1] : '';\n\n  items.push({ json: { title, salePrice, vintedId, emailSubject: subject, emailDate: email.json.date || new Date().toISOString() } });\n}\nreturn items;"
+      },
+      "id": "parse-email-4",
+      "name": "Parse Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Items",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Vinted ID",
+              "lookupValue": "={{ $json.vintedId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-find-4",
+      "name": "Find Row by Vinted ID",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1350, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const emailData = $('Parse Email').item.json;\nconst sheetRow = $input.first().json;\nconst fbUrl = sheetRow['FB URL'] || sheetRow['B'] || 'Not found';\nconst title = sheetRow['Title'] || sheetRow['D'] || emailData.title;\nconst fbPrice = sheetRow['FB Price'] || sheetRow['F'] || 0;\nconst vintedPrice = sheetRow['Vinted Price'] || sheetRow['G'] || 0;\nconst profit = emailData.salePrice ? emailData.salePrice - parseInt(fbPrice) : vintedPrice - parseInt(fbPrice);\nreturn [{ json: { title, fbUrl, salePrice: emailData.salePrice, profit, vintedId: emailData.vintedId, fbPrice, vintedPrice, emailData } }];"
+      },
+      "id": "merge-data-4",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1570, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Items",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Vinted ID": "={{ $json.vintedId }}",
+            "Status": "=Sold",
+            "Sale Date": "={{ $now.toISO() }}",
+            "Sale Price": "={{ $json.salePrice }}",
+            "Profit": "={{ $json.profit }}"
+          },
+          "matchingColumns": ["Vinted ID"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "sheets-update-4",
+      "name": "Update Row as Sold",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1790, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"🎉 <b>SOLD on Vinted!</b>\\n\\n📦 {{ $json.title }}\\n💰 Sale price: <b>{{ $json.salePrice }} CZK</b>\\n📈 Profit: <b>{{ $json.profit }} CZK</b>\\n\\n<b>Is the FB listing still available?</b>\\n🔗 <a href=\\\"{{ $json.fbUrl }}\\\">Check FB listing</a>\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": {{ JSON.stringify({ inline_keyboard: [[{ text: '✅ Still listed - message seller', callback_data: 'fb_active:' + $json.vintedId }, { text: '❌ No longer listed', callback_data: 'fb_gone:' + $json.vintedId }]] }) }}\n}",
+        "options": {}
+      },
+      "id": "telegram-notify-4",
+      "name": "Send Telegram Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2010, 200]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "Search Vinted Sale Emails", "type": "main", "index": 0 }]
+      ]
+    },
+    "Search Vinted Sale Emails": {
+      "main": [
+        [{ "node": "Any Emails Found?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Any Emails Found?": {
+      "main": [
+        [{ "node": "Process One at a Time", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Process One at a Time": {
+      "main": [
+        [{ "node": "Parse Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Email": {
+      "main": [
+        [{ "node": "Find Row by Vinted ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Find Row by Vinted ID": {
+      "main": [
+        [{ "node": "Merge Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [{ "node": "Update Row as Sold", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Row as Sold": {
+      "main": [
+        [{ "node": "Send Telegram Notification", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Prague"
+  },
+  "meta": {
+    "instanceId": "n8n"
+  }
+}
