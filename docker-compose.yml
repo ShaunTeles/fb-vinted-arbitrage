@@ -6,7 +6,7 @@ services:
       - "5678:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
-      - WEBHOOK_TUNNEL_URL=${NGROK_TUNNEL_URL}
+      - WEBHOOK_URL=${NGROK_TUNNEL_URL}
       - N8N_ENABLE_AUTH=false
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - APIFY_API_KEY=${APIFY_API_KEY}
