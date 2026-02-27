@@ -45,52 +45,31 @@
       }
     },
     {
-      "id": "switch-action",
-      "name": "Switch: Approve or Skip",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
+      "id": "if-approve",
+      "name": "Approve or Skip?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
       "position": [900, 300],
       "parameters": {
-        "mode": "rules",
-        "rules": {
-          "rules": [
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
             {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "approve",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Approve"
-            },
-            {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "skip",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Skip"
+              "id": "cond1",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
-          ]
-        },
-        "options": {}
+          ],
+          "combinator": "and"
+        }
       }
     },
     {
@@ -103,7 +82,7 @@
         "operation": "read",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -114,7 +93,7 @@
         "filtersUI": {
           "values": [
             {
-              "lookupColumn": "FB ID",
+              "lookupColumn": "item_id",
               "lookupValue": "={{ $json.fbId }}"
             }
           ]
@@ -138,7 +117,7 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -149,11 +128,11 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "FB ID": "={{ $json['FB ID'] }}",
-            "Status": "Approved",
-            "Approved At": "={{ $now.toISO() }}"
+            "item_id": "={{ $json['item_id'] }}",
+            "status": "approved",
+            "approved_at": "={{ $now.toISO() }}"
           },
-          "matchingColumns": ["FB ID"],
+          "matchingColumns": ["item_id"],
           "schema": []
         },
         "options": {}
@@ -176,7 +155,7 @@
         "url": "http://localhost:5678/webhook/post-to-vinted",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"fbId\": \"{{ $json['FB ID'] }}\",\n  \"title\": \"{{ $json['Title'] }}\",\n  \"description\": \"{{ $json['Description'] }}\",\n  \"images\": {{ JSON.stringify($json['Images'] ? $json['Images'].split(',').map(s => s.trim()) : []) }},\n  \"vintedPrice\": \"{{ $json['Vinted Price'] }}\",\n  \"brand\": \"{{ $json['Brand'] }}\",\n  \"condition\": \"{{ $json['Condition'] }}\",\n  \"size\": \"{{ $json['Size'] }}\",\n  \"fbUrl\": \"{{ $json['FB URL'] }}\",\n  \"sellerName\": \"{{ $json['Seller Name'] }}\",\n  \"score\": \"{{ $json['Score'] }}\",\n  \"scoreReason\": \"{{ $json['Score Reason'] }}\"\n}",
+        "jsonBody": "={\n  \"item_id\": \"{{ $json['item_id'] }}\"\n}",
         "options": {}
       }
     },
@@ -191,7 +170,7 @@
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"✅ Approved & queued for Vinted: <b>{{ $json['Title'] }}</b>\",\n  \"parse_mode\": \"HTML\"\n}",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"Approved & queued for Vinted: {{ $json['vinted_title'] }}\"\n}",
         "options": {}
       }
     },
@@ -205,7 +184,7 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -216,10 +195,10 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "FB ID": "={{ $json.fbId }}",
-            "Status": "Skipped"
+            "item_id": "={{ $json.fbId }}",
+            "status": "skipped"
           },
-          "matchingColumns": ["FB ID"],
+          "matchingColumns": ["item_id"],
           "schema": []
         },
         "options": {}
@@ -242,7 +221,7 @@
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"⏭ Skipped: <b>{{ $json.fbId }}</b>\",\n  \"parse_mode\": \"HTML\"\n}",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"Skipped: {{ $json.fbId }}\"\n}",
         "options": {}
       }
     }
@@ -250,101 +229,47 @@
   "connections": {
     "Telegram Trigger": {
       "main": [
-        [
-          {
-            "node": "Answer Callback Query",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Answer Callback Query", "type": "main", "index": 0 }]
       ]
     },
     "Answer Callback Query": {
       "main": [
-        [
-          {
-            "node": "Parse Callback Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Parse Callback Data", "type": "main", "index": 0 }]
       ]
     },
     "Parse Callback Data": {
       "main": [
-        [
-          {
-            "node": "Switch: Approve or Skip",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Approve or Skip?", "type": "main", "index": 0 }]
       ]
     },
-    "Switch: Approve or Skip": {
+    "Approve or Skip?": {
       "main": [
-        [
-          {
-            "node": "Sheets: Read Row (Approve)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Sheets: Set Status Skipped",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Sheets: Read Row (Approve)", "type": "main", "index": 0 }],
+        [{ "node": "Sheets: Set Status Skipped", "type": "main", "index": 0 }]
       ]
     },
     "Sheets: Read Row (Approve)": {
       "main": [
-        [
-          {
-            "node": "Sheets: Set Status Approved",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Sheets: Set Status Approved", "type": "main", "index": 0 }]
       ]
     },
     "Sheets: Set Status Approved": {
       "main": [
-        [
-          {
-            "node": "Trigger Workflow 2: Post to Vinted",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Trigger Workflow 2: Post to Vinted", "type": "main", "index": 0 }]
       ]
     },
     "Trigger Workflow 2: Post to Vinted": {
       "main": [
-        [
-          {
-            "node": "Telegram: Confirm Approved",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Telegram: Confirm Approved", "type": "main", "index": 0 }]
       ]
     },
     "Sheets: Set Status Skipped": {
       "main": [
-        [
-          {
-            "node": "Telegram: Confirm Skipped",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Telegram: Confirm Skipped", "type": "main", "index": 0 }]
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "timezone": "Europe/Prague"

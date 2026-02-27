@@ -1,6 +1,9 @@
 # Session cookies - never commit these
 vinted-poster/sessions/
 
+# n8n local data (database, credentials, binary data)
+data/
+
 # Node
 node_modules/
 
