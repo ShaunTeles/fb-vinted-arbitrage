@@ -20,42 +20,23 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/runs?token={{ $env.APIFY_API_KEY }}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"searchQuery\": \"dětské oblečení\",\n  \"locationQuery\": \"Prague, Czech Republic\",\n  \"maxItems\": 50,\n  \"minPrice\": 0,\n  \"maxPrice\": 500\n}",
-        "options": {}
+        "jsCode": "return [{\n  json: {\n    apifyToken: $env.APIFY_API_KEY,\n    anthropicKey: $env.ANTHROPIC_API_KEY,\n    telegramToken: $env.TELEGRAM_BOT_TOKEN,\n    telegramChatId: $env.TELEGRAM_CHAT_ID\n  }\n}];"
       },
-      "id": "apify-start",
-      "name": "Start Apify Run",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "id": "get-secrets",
+      "name": "Get Secrets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [470, 300]
     },
     {
       "parameters": {
-        "unit": "seconds",
-        "amount": 90
+        "jsCode": "// MOCK DATA — replacing Apify scraper for testing\n// Simulates realistic Facebook Marketplace kids clothing listings from Prague\nreturn [\n  {\n    json: {\n      id: \"mock-001\",\n      title: \"Zara Kids zimní bunda vel. 104\",\n      price: 350,\n      description: \"Krásná zimní bunda Zara Kids, velikost 104 (3-4 roky). Velmi dobrý stav, nošena jednu sezónu. Barva modrá.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-001\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Jana Novákova\"\n    }\n  },\n  {\n    json: {\n      id: \"mock-002\",\n      title: \"H&M sada oblečení pro miminko 62-68\",\n      price: 200,\n      description: \"Sada 5 kusů oblečení H&M pro miminko, vel. 62-68. Téměř nové, nošeno jen párkrát. Bez skvrn.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-002\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Petra Svobodová\"\n    }\n  },\n  {\n    json: {\n      id: \"mock-003\",\n      title: \"Nike tenisky dětské vel. 28\",\n      price: 450,\n      description: \"Originální Nike tenisky pro děti, velikost 28. Nošeny cca 3 měsíce, v dobrém stavu. Podrážka neopotřebovaná.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-003\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Martin Dvořák\"\n    }\n  }\n];"
       },
-      "id": "wait-90s",
-      "name": "Wait 90s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "webhookId": "wait-webhook-1",
+      "id": "mock-listings",
+      "name": "Mock FB Listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [690, 300]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.data.id }}/dataset/items?token={{ $env.APIFY_API_KEY }}",
-        "options": {}
-      },
-      "id": "apify-results",
-      "name": "Get Apify Results",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [910, 300]
     },
     {
       "parameters": {
@@ -66,12 +47,12 @@
       "name": "Loop Through Items",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1130, 300]
+      "position": [1350, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.anthropic.com/v1/messages",
+        "url": "https://api.anthropic.com/v1/messages",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 256,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: {{ $json.title }}\\nPrice: {{ $json.price }} CZK\\nDescription: {{ $json.description }}\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at {{ $json.price + 600 }} CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n{\\\"score\\\": <1-10>, \\\"reason\\\": \\\"<one sentence>\\\", \\\"brand\\\": \\\"<brand or unknown>\\\", \\\"condition\\\": \\\"<new/very_good/good/fair>\\\", \\\"size\\\": \\\"<size or unknown>\\\"}\"\n  }]\n}",
@@ -84,7 +65,7 @@
             },
             {
               "name": "x-api-key",
-              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+              "value": "={{ $('Get Secrets').first().json.anthropicKey }}"
             },
             {
               "name": "content-type",
@@ -98,7 +79,7 @@
       "name": "Claude Score Item",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1350, 300]
+      "position": [1570, 300]
     },
     {
       "parameters": {
@@ -108,7 +89,7 @@
       "name": "Parse Claude Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1570, 300]
+      "position": [1790, 300]
     },
     {
       "parameters": {
@@ -150,7 +131,7 @@
       "name": "Set Computed Fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1790, 300]
+      "position": [2010, 300]
     },
     {
       "parameters": {
@@ -178,29 +159,29 @@
       "name": "Score >= 7?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2010, 300]
+      "position": [2230, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendPhoto",
+        "url": "={{ 'https://api.telegram.org/bot' + $('Get Secrets').first().json.telegramToken + '/sendPhoto' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"photo\": \"{{ $json.images[0] }}\",\n  \"caption\": \"{{ '🛍 <b>' + $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' + $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n\\n<a href=\\\"' + $json.fbUrl + '\\\">View on Facebook</a>' }}\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": \"{{ JSON.stringify({ inline_keyboard: [[{ text: '✅ Approve', callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId }]] }) }}\"\n}",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $('Get Secrets').first().json.telegramChatId }}\",\n  \"photo\": \"{{ $json.images[0] }}\",\n  \"caption\": \"{{ '🛍 <b>' + $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' + $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n\\n<a href=\\\"' + $json.fbUrl + '\\\">View on Facebook</a>' }}\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": \"{{ JSON.stringify({ inline_keyboard: [[{ text: '✅ Approve', callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId }]] }) }}\"\n}",
         "options": {}
       },
       "id": "telegram-send",
       "name": "Send Telegram Approval",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2230, 180]
+      "position": [2450, 180]
     },
     {
       "parameters": {
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -236,10 +217,10 @@
       "name": "Append to Sheets (Pending)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.4,
-      "position": [2450, 180],
+      "position": [2670, 180],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "id": "zHhDXzSbzhPXgh1S",
           "name": "Google Sheets account"
         }
       }
@@ -249,7 +230,7 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -285,10 +266,10 @@
       "name": "Append to Sheets (Skipped)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.4,
-      "position": [2230, 420],
+      "position": [2450, 420],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "id": "zHhDXzSbzhPXgh1S",
           "name": "Google Sheets account"
         }
       }
@@ -299,36 +280,25 @@
       "main": [
         [
           {
-            "node": "Start Apify Run",
+            "node": "Get Secrets",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Start Apify Run": {
+    "Get Secrets": {
       "main": [
         [
           {
-            "node": "Wait 90s",
+            "node": "Mock FB Listings",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait 90s": {
-      "main": [
-        [
-          {
-            "node": "Get Apify Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Apify Results": {
+    "Mock FB Listings": {
       "main": [
         [
           {
