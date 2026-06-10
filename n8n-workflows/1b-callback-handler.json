@@ -2,29 +2,29 @@
   "name": "1b - Callback Handler (Approve / Skip)",
   "nodes": [
     {
-      "id": "telegram-trigger",
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "f372fa29-fc69-42e3-8db5-41d5bbce8f7c",
       "name": "Telegram Trigger",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300],
+      "position": [
+        -880,
+        144
+      ],
       "webhookId": "telegram-callback-webhook",
-      "parameters": {
-        "updates": ["callback_query"],
-        "additionalFields": {}
-      },
       "credentials": {
         "telegramApi": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "id": "ULRUHSHKEnf46TyE",
           "name": "Telegram account"
         }
       }
     },
     {
-      "id": "answer-callback",
-      "name": "Answer Callback Query",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [460, 300],
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/answerCallbackQuery",
@@ -32,30 +32,37 @@
         "specifyBody": "json",
         "jsonBody": "={\n  \"callback_query_id\": \"{{ $json.callback_query.id }}\"\n}",
         "options": {}
-      }
+      },
+      "id": "41b440b9-ec6c-4fdd-aed9-967c0c9c1c42",
+      "name": "Answer Callback Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -656,
+        144
+      ]
     },
     {
-      "id": "parse-callback",
+      "parameters": {
+        "jsCode": "const update = $('Telegram Trigger').first().json;\n  const data = update.callback_query.data; // e.g. \"approve:mock-001\"\n  const [action, fbId] = data.split(':');\n  const callbackId = update.callback_query.id;\n  return [{ json: { action, fbId, callbackId, rawData: update } }];"
+      },
+      "id": "72392162-09aa-4f48-ac13-18d49458b722",
       "name": "Parse Callback Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 300],
-      "parameters": {
-        "jsCode": "const data = $input.first().json.callback_query.data; // e.g. \"approve:123456\"\nconst [action, fbId] = data.split(':');\nconst callbackId = $input.first().json.callback_query.id;\nreturn [{ json: { action, fbId, callbackId, rawData: $input.first().json } }];"
-      }
+      "position": [
+        -448,
+        144
+      ]
     },
     {
-      "id": "if-approve",
-      "name": "Approve or Skip?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [900, 300],
       "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "loose",
+            "version": 1
           },
           "conditions": [
             {
@@ -69,17 +76,20 @@
             }
           ],
           "combinator": "and"
-        }
-      }
+        },
+        "options": {}
+      },
+      "id": "fe5831e7-da82-47b1-8682-a940c522e195",
+      "name": "Approve or Skip?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        144
+      ]
     },
     {
-      "id": "sheets-read-approve",
-      "name": "Sheets: Read Row (Approve)",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [1120, 160],
       "parameters": {
-        "operation": "read",
         "documentId": {
           "__rl": true,
           "value": "YOUR_GOOGLE_SHEET_ID",
@@ -93,26 +103,29 @@
         "filtersUI": {
           "values": [
             {
-              "lookupColumn": "item_id",
+              "lookupColumn": "FB ID",
               "lookupValue": "={{ $json.fbId }}"
             }
           ]
         },
         "options": {}
       },
+      "id": "00b72d5c-f585-4a7c-a2f9-d345aeaf8660",
+      "name": "Sheets: Read Row (Approve)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
     },
     {
-      "id": "sheets-update-approved",
-      "name": "Sheets: Set Status Approved",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [1340, 160],
       "parameters": {
         "operation": "update",
         "documentId": {
@@ -128,58 +141,68 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "item_id": "={{ $json['item_id'] }}",
-            "status": "approved",
-            "approved_at": "={{ $now.toISO() }}"
+            "FB ID": "={{ $json['FB ID'] }}",
+            "Status": "Approved"
           },
-          "matchingColumns": ["item_id"],
+          "matchingColumns": [
+            "FB ID"
+          ],
           "schema": []
         },
         "options": {}
       },
+      "id": "3a4b39c2-fa04-45e2-807c-ee4e1d47d7bc",
+      "name": "Sheets: Set Status Approved",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
     },
     {
-      "id": "trigger-workflow2",
-      "name": "Trigger Workflow 2: Post to Vinted",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1560, 160],
       "parameters": {
         "method": "POST",
         "url": "http://localhost:5678/webhook/post-to-vinted",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"item_id\": \"{{ $json['item_id'] }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ fbId: $('Sheets: Read Row (Approve)').first().json['FB ID'], title: $('Sheets: Read Row (Approve)').first().json.Title, description: $('Sheets: Read Row (Approve)').first().json.Description, images: $('Sheets: Read Row (Approve)').first().json.Images, vintedPrice: $('Sheets: Read Row (Approve)').first().json['Vinted Price'], brand: $('Sheets: Read Row (Approve)').first().json.Brand, condition: $('Sheets: Read Row (Approve)').first().json.Condition, size: $('Sheets: Read Row (Approve)').first().json.Size }) }}",
         "options": {}
-      }
-    },
-    {
-      "id": "telegram-confirm-approved",
-      "name": "Telegram: Confirm Approved",
+      },
+      "id": "8bdf73a7-4fb5-436b-8389-bba0a3773757",
+      "name": "Trigger Workflow 2: Post to Vinted",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1780, 160],
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"Approved & queued for Vinted: {{ $json['vinted_title'] }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '✅ Approved & queued for Vinted: ' + $('Sheets: Read Row (Approve)').first().json.Title }) }}",
         "options": {}
-      }
+      },
+      "id": "dee26185-2e6e-4e83-8cfe-d58023cff130",
+      "name": "Telegram: Confirm Approved",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        0
+      ]
     },
     {
-      "id": "sheets-update-skipped",
-      "name": "Sheets: Set Status Skipped",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [1120, 440],
       "parameters": {
         "operation": "update",
         "documentId": {
@@ -195,86 +218,149 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "item_id": "={{ $json.fbId }}",
-            "status": "skipped"
+            "FB ID": "={{ $json.fbId }}",
+            "Status": "Skipped"
           },
-          "matchingColumns": ["item_id"],
+          "matchingColumns": [
+            "FB ID"
+          ],
           "schema": []
         },
         "options": {}
       },
+      "id": "d7f50627-4709-4514-b72c-9a22a43c2d18",
+      "name": "Sheets: Set Status Skipped",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        288
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
     },
     {
-      "id": "telegram-confirm-skipped",
-      "name": "Telegram: Confirm Skipped",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1340, 440],
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"Skipped: {{ $json.fbId }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '❌ Skipped: ' + $('Parse Callback Data').first().json.fbId }) }}",
         "options": {}
-      }
+      },
+      "id": "0b124252-8584-4f81-984c-624b3bdac278",
+      "name": "Telegram: Confirm Skipped",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        288
+      ]
     }
   ],
   "connections": {
     "Telegram Trigger": {
       "main": [
-        [{ "node": "Answer Callback Query", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Answer Callback Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Answer Callback Query": {
       "main": [
-        [{ "node": "Parse Callback Data", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse Callback Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parse Callback Data": {
       "main": [
-        [{ "node": "Approve or Skip?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Approve or Skip?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Approve or Skip?": {
       "main": [
-        [{ "node": "Sheets: Read Row (Approve)", "type": "main", "index": 0 }],
-        [{ "node": "Sheets: Set Status Skipped", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Sheets: Read Row (Approve)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets: Set Status Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Sheets: Read Row (Approve)": {
       "main": [
-        [{ "node": "Sheets: Set Status Approved", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Sheets: Set Status Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Sheets: Set Status Approved": {
       "main": [
-        [{ "node": "Trigger Workflow 2: Post to Vinted", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Trigger Workflow 2: Post to Vinted",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Trigger Workflow 2: Post to Vinted": {
       "main": [
-        [{ "node": "Telegram: Confirm Approved", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Telegram: Confirm Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Sheets: Set Status Skipped": {
       "main": [
-        [{ "node": "Telegram: Confirm Skipped", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Telegram: Confirm Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Prague"
-  },
-  "meta": {
-    "instanceId": "n8n"
+    "binaryMode": "separate"
   }
 }

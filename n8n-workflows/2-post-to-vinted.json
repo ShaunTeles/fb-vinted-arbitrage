@@ -2,52 +2,55 @@
   "name": "2 - Post to Vinted",
   "nodes": [
     {
-      "id": "node-webhook-post-to-vinted",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-to-vinted",
+        "options": {}
+      },
+      "id": "a3383bd8-5fd3-442e-a558-50c0d748ec49",
       "name": "Webhook: Receive Approved Item",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
-      "webhookId": "post-to-vinted-webhook",
-      "parameters": {
-        "path": "post-to-vinted",
-        "httpMethod": "POST",
-        "responseMode": "onReceived",
-        "options": {}
-      }
+      "position": [
+        -880,
+        128
+      ],
+      "webhookId": "post-to-vinted-webhook"
     },
     {
-      "id": "node-code-prepare-payload",
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst images = Array.isArray(body.images) ? body.images : (body.images || '').split(',').filter(Boolean);\nreturn [{\n  json: {\n    images: images.slice(0, 5),\n    title: body.title || '',\n    description: body.description || '',\n    price: parseInt(body['Vinted Price'] || body.vintedPrice || body['G'] || 0),\n    category: 'Děti > Oblečení',\n    brand: body.brand || body['Brand'] || body['I'] || 'Ostatní',\n    condition: body.condition || body['Condition'] || body['J'] || 'good',\n    size: body.size || body['Size'] || body['K'] || '',\n    fbId: body.fbId || body['FB ID'] || body['C'] || ''\n  }\n}];"
+      },
+      "id": "6ca5a41f-96b3-470a-b029-3282b491652f",
       "name": "Prepare Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300],
-      "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst images = Array.isArray(body.images) ? body.images : (body.images || '').split(',').filter(Boolean);\nreturn [{\n  json: {\n    images: images.slice(0, 5),\n    title: body.title || '',\n    description: body.description || '',\n    price: parseInt(body['Vinted Price'] || body.vintedPrice || body['G'] || 0),\n    category: 'Děti > Oblečení',\n    brand: body.brand || body['Brand'] || body['I'] || 'Ostatní',\n    condition: body.condition || body['Condition'] || body['J'] || 'good',\n    size: body.size || body['Size'] || body['K'] || '',\n    fbId: body.fbId || body['FB ID'] || body['C'] || ''\n  }\n}];"
-      }
+      "position": [
+        -656,
+        128
+      ]
     },
     {
-      "id": "node-http-post-vinted-poster",
-      "name": "POST to vinted-poster",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [680, 300],
       "parameters": {
         "method": "POST",
-        "url": "http://vinted-poster:3001/post-listing",
+        "url": "http://fb-vinted-arbitrage.railway.internal:3001/post-listing",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {
           "timeout": 120000
         }
-      }
+      },
+      "id": "6094a93d-64eb-4acd-8d12-7315a3772fe1",
+      "name": "POST to vinted-poster",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        128
+      ]
     },
     {
-      "id": "node-if-success-check",
-      "name": "Success?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [900, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -67,30 +70,37 @@
             }
           ],
           "combinator": "and"
-        }
-      }
+        },
+        "options": {}
+      },
+      "id": "d6266642-311e-476b-a7fa-e0a736bf6a87",
+      "name": "Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        128
+      ]
     },
     {
-      "id": "node-code-extract-vinted-id",
+      "parameters": {
+        "jsCode": "const listingUrl = $input.first().json.listingUrl;\nconst vintedId = listingUrl ? listingUrl.split('/').pop() : '';\nreturn [{ json: { ...$input.first().json, vintedId } }];"
+      },
+      "id": "c40ac9fe-bba9-4b82-8605-3cc3f8e078ae",
       "name": "Extract Vinted ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 180],
-      "parameters": {
-        "jsCode": "const listingUrl = $input.first().json.listingUrl;\nconst vintedId = listingUrl ? listingUrl.split('/').pop() : '';\nreturn [{ json: { ...$input.first().json, vintedId } }];"
-      }
+      "position": [
+        0,
+        0
+      ]
     },
     {
-      "id": "node-google-sheets-update",
-      "name": "Update Google Sheet",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.4,
-      "position": [1340, 180],
       "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -106,24 +116,29 @@
             "Vinted URL": "={{ $json.listingUrl }}",
             "Vinted ID": "={{ $json.vintedId }}"
           },
-          "matchingColumns": ["FB ID"],
+          "matchingColumns": [
+            "FB ID"
+          ],
           "schema": []
         },
         "options": {}
       },
+      "id": "91532528-41b0-473c-93c4-f274c0b49da4",
+      "name": "Update Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
     },
     {
-      "id": "node-http-telegram-success",
-      "name": "Telegram: Success",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1560, 180],
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
@@ -131,14 +146,17 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '✅ Listed on Vinted!\\n\\n<b>' + $('Prepare Payload').item.json.title + '</b>\\n💰 ' + $('Prepare Payload').item.json.price + ' CZK\\n\\n<a href=\"' + $json.listingUrl + '\">View listing</a>', parse_mode: 'HTML' }) }}",
         "options": {}
-      }
-    },
-    {
-      "id": "node-http-telegram-failure",
-      "name": "Telegram: Failure",
+      },
+      "id": "b53dc73d-f4a2-4bd5-9786-a9bcb9b3facd",
+      "name": "Telegram: Success",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 420],
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
@@ -146,7 +164,15 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '❌ Failed to post to Vinted\\n\\nError: ' + $json.error, parse_mode: 'HTML' }) }}",
         "options": {}
-      }
+      },
+      "id": "4d7e95ca-787b-4eda-a649-2c347596810a",
+      "name": "Telegram: Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        240
+      ]
     }
   ],
   "connections": {
@@ -224,12 +250,8 @@
       ]
     }
   },
-  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Prague"
-  },
-  "meta": {
-    "instanceId": "n8n"
+    "binaryMode": "separate"
   }
 }

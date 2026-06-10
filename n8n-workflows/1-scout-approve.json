@@ -12,50 +12,58 @@
           ]
         }
       },
-      "id": "sched-1",
+      "id": "46e1e8ac-a9ef-456f-806c-78c5a4c0ea78",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [250, 300]
+      "position": [
+        -2208,
+        128
+      ]
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    apifyToken: $env.APIFY_API_KEY,\n    anthropicKey: $env.ANTHROPIC_API_KEY,\n    telegramToken: $env.TELEGRAM_BOT_TOKEN,\n    telegramChatId: $env.TELEGRAM_CHAT_ID\n  }\n}];"
+        "jsCode": "return [{\n    json: {\n      apifyToken: $env.APIFY_API_KEY || '',\n      anthropicKey: $env.ANTHROPIC_API_KEY || '',\n      telegramToken: $env.TELEGRAM_BOT_TOKEN || '',\n      telegramChatId: $env.TELEGRAM_CHAT_ID || ''\n    }\n  }];"
       },
-      "id": "get-secrets",
+      "id": "ea1e5690-edd5-4556-8428-3f37dc065ed4",
       "name": "Get Secrets",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [470, 300]
+      "position": [
+        -1984,
+        128
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// MOCK DATA — replacing Apify scraper for testing\n// Simulates realistic Facebook Marketplace kids clothing listings from Prague\nreturn [\n  {\n    json: {\n      id: \"mock-001\",\n      title: \"Zara Kids zimní bunda vel. 104\",\n      price: 350,\n      description: \"Krásná zimní bunda Zara Kids, velikost 104 (3-4 roky). Velmi dobrý stav, nošena jednu sezónu. Barva modrá.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-001\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Jana Novákova\"\n    }\n  },\n  {\n    json: {\n      id: \"mock-002\",\n      title: \"H&M sada oblečení pro miminko 62-68\",\n      price: 200,\n      description: \"Sada 5 kusů oblečení H&M pro miminko, vel. 62-68. Téměř nové, nošeno jen párkrát. Bez skvrn.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-002\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Petra Svobodová\"\n    }\n  },\n  {\n    json: {\n      id: \"mock-003\",\n      title: \"Nike tenisky dětské vel. 28\",\n      price: 450,\n      description: \"Originální Nike tenisky pro děti, velikost 28. Nošeny cca 3 měsíce, v dobrém stavu. Podrážka neopotřebovaná.\",\n      url: \"https://www.facebook.com/marketplace/item/mock-003\",\n      images: [\"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biebrzanski_Park_Narodowy_krowa.jpg/320px-Biebrzanski_Park_Narodowy_krowa.jpg\"],\n      sellerName: \"Martin Dvořák\"\n    }\n  }\n];"
+        "jsCode": "// MOCK DATA - replacing Apify scraper for testing\n  return [\n    {\n      json: {\n        id: \"mock-001\",\n        title: \"Zara Kids zimní bunda vel. 104\",\n        price: 350,\n        description: \"Krásná zimní bunda Zara Kids, vel. 104. Velmi dobrý stav, barva modrá.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-001\",\n        images: [\"https://picsum.photos/id/237/400/400.jpg\"],\n        sellerName: \"Jana Novákova\"\n      }\n    },\n    {\n      json: {\n        id: \"mock-002\",\n        title: \"H&M sada oblečení pro miminko 62-68\",\n        price: 200,\n        description: \"Sada 5 kusů oblečení H&M, vel. 62-68. Téměř nové, bez skvrn.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-002\",\n        images: [\"https://picsum.photos/id/1062/400/400.jpg\"],\n        sellerName: \"Petra Svobodová\"\n      }\n    },\n    {\n      json: {\n        id: \"mock-003\",\n        title: \"Nike tenisky dětské vel. 28\",\n        price: 450,\n        description: \"Originální Nike tenisky, vel. 28. Dobrý stav, podrážka neopotřebovaná.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-003\",\n        images: [\"https://picsum.photos/id/1084/400/400.jpg\"],\n        sellerName: \"Martin Dvořák\"\n      }\n    }\n  ];"
       },
-      "id": "mock-listings",
+      "id": "852a2bef-5f78-49f7-abf9-566a642dee6c",
       "name": "Mock FB Listings",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [690, 300]
+      "position": [
+        -1760,
+        128
+      ]
     },
     {
       "parameters": {
-        "batchSize": 1,
         "options": {}
       },
-      "id": "split-batches",
+      "id": "fe538660-4689-41d9-bb28-fa3d274575f5",
       "name": "Loop Through Items",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1350, 300]
+      "position": [
+        -1104,
+        128
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 256,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: {{ $json.title }}\\nPrice: {{ $json.price }} CZK\\nDescription: {{ $json.description }}\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at {{ $json.price + 600 }} CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n{\\\"score\\\": <1-10>, \\\"reason\\\": \\\"<one sentence>\\\", \\\"brand\\\": \\\"<brand or unknown>\\\", \\\"condition\\\": \\\"<new/very_good/good/fair>\\\", \\\"size\\\": \\\"<size or unknown>\\\"}\"\n  }]\n}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -73,28 +81,35 @@
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 256,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: {{ $json.title }}\\nPrice: {{ $json.price }} CZK\\nDescription: {{ $json.description }}\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at {{ $json.price + 600 }} CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n{\\\"score\\\": <1-10>, \\\"reason\\\": \\\"<one sentence>\\\", \\\"brand\\\": \\\"<brand or unknown>\\\", \\\"condition\\\": \\\"<new/very_good/good/fair>\\\", \\\"size\\\": \\\"<size or unknown>\\\"}\"\n  }]\n}",
         "options": {}
       },
-      "id": "claude-score",
+      "id": "4c3fb872-dd3e-43ae-8b5b-64d11f674e52",
       "name": "Claude Score Item",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1570, 300]
+      "position": [
+        -880,
+        128
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const inputItem = $input.first();\nconst text = inputItem.json.content[0].text;\nconst parsed = JSON.parse(text);\nreturn [{ json: { ...inputItem.json, ...parsed } }];"
+        "jsCode": "const inputItem = $input.first();\n  let text = inputItem.json.content[0].text.trim();\n\n  // Strip ```json ... ``` fences if Claude wrapped its answer in them\n  if (text.startsWith('```')) {\n    text = text.replace(/^```[a-z]*\\s*/i, '').replace(/```\\s*$/, '').trim();\n  }\n\n  // Fallback: take everything between the first { and the last }\n  if (!text.startsWith('{')) {\n    text = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);\n  }\n\n  const parsed = JSON.parse(text);\n\n  // Re-attach the original listing (title, price, id, url...)\n  // that was lost when Claude's API response replaced it\n  const original = $('Loop Through Items').first().json;\n\n  return [{ json: { ...original, ...parsed } }];"
       },
-      "id": "parse-claude",
+      "id": "10501db9-ce70-4177-9b03-1ff199c6b3f6",
       "name": "Parse Claude Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1790, 300]
+      "position": [
+        -656,
+        128
+      ]
     },
     {
       "parameters": {
-        "mode": "manual",
-        "duplicateItem": false,
         "assignments": {
           "assignments": [
             {
@@ -123,15 +138,17 @@
             }
           ]
         },
-        "options": {
-          "includeBinaries": false
-        }
+        "includeOtherFields": true,
+        "options": {}
       },
-      "id": "set-fields",
+      "id": "2079d568-a71f-4c2c-860d-548bfcb9633a",
       "name": "Set Computed Fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2010, 300]
+      "position": [
+        -448,
+        128
+      ]
     },
     {
       "parameters": {
@@ -139,12 +156,13 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict",
+            "version": 1
           },
           "conditions": [
             {
               "id": "cond1",
-              "leftValue": "={{ $json.score }}",
+              "leftValue": "={{ Number($json.score) }}",
               "rightValue": 7,
               "operator": {
                 "type": "number",
@@ -153,13 +171,17 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
-      "id": "if-score",
+      "id": "1f97a25f-84cc-497e-93e4-3ecb7a0bd192",
       "name": "Score >= 7?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2230, 300]
+      "position": [
+        -224,
+        128
+      ]
     },
     {
       "parameters": {
@@ -167,14 +189,17 @@
         "url": "={{ 'https://api.telegram.org/bot' + $('Get Secrets').first().json.telegramToken + '/sendPhoto' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $('Get Secrets').first().json.telegramChatId }}\",\n  \"photo\": \"{{ $json.images[0] }}\",\n  \"caption\": \"{{ '🛍 <b>' + $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' + $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n\\n<a href=\\\"' + $json.fbUrl + '\\\">View on Facebook</a>' }}\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": \"{{ JSON.stringify({ inline_keyboard: [[{ text: '✅ Approve', callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId }]] }) }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $('Get Secrets').first().json.telegramChatId, photo: $json.images[0], caption: '🛍 <b>' +\n  $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' +\n  $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n\\n<a href=\"' +\n  $json.fbUrl + '\">View on Facebook</a>', parse_mode: 'HTML', reply_markup: { inline_keyboard: [[ { text: '✅ Approve',\n  callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId } ]] } }) }}",
         "options": {}
       },
-      "id": "telegram-send",
+      "id": "209e8c3f-747e-4423-9d69-c7794d8809b5",
       "name": "Send Telegram Approval",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2450, 180]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
@@ -193,19 +218,19 @@
           "mappingMode": "defineBelow",
           "value": {
             "Date Scraped": "={{ $now.toISO() }}",
-            "FB URL": "={{ $json.fbUrl }}",
-            "FB ID": "={{ $json.fbId }}",
-            "Title": "={{ $json.title }}",
-            "Description": "={{ $json.description }}",
-            "FB Price": "={{ $json.fbPrice }}",
-            "Vinted Price": "={{ $json.vintedPrice }}",
-            "Images": "={{ $json.images ? $json.images.join(',') : '' }}",
-            "Brand": "={{ $json.brand }}",
-            "Condition": "={{ $json.condition }}",
-            "Size": "={{ $json.size }}",
-            "Seller Name": "={{ $json.sellerName }}",
-            "Score": "={{ $json.score }}",
-            "Score Reason": "={{ $json.reason }}",
+            "FB URL": "={{ $('Set Computed Fields').first().json.fbUrl }}",
+            "FB ID": "={{ $('Set Computed Fields').first().json.fbId }}",
+            "Title": "={{ $('Set Computed Fields').first().json.title }}",
+            "Description": "={{ $('Set Computed Fields').first().json.description }}",
+            "FB Price": "={{ $('Set Computed Fields').first().json.fbPrice }}",
+            "Vinted Price": "={{ $('Set Computed Fields').first().json.vintedPrice }}",
+            "Images": "={{ $('Set Computed Fields').first().json.images ? $('Set Computed Fields').first().json.images.join(',') : '' }}",
+            "Brand": "={{ $('Set Computed Fields').first().json.brand }}",
+            "Condition": "={{ $('Set Computed Fields').first().json.condition }}",
+            "Size": "={{ $('Set Computed Fields').first().json.size }}",
+            "Seller Name": "={{ $('Set Computed Fields').first().json.sellerName }}",
+            "Score": "={{ $('Set Computed Fields').first().json.score }}",
+            "Score Reason": "={{ $('Set Computed Fields').first().json.reason }}",
             "Status": "=Pending"
           },
           "matchingColumns": [],
@@ -213,14 +238,17 @@
         },
         "options": {}
       },
-      "id": "sheets-approved",
+      "id": "42122e32-a5a4-4135-930c-26bd6ddebf12",
       "name": "Append to Sheets (Pending)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.4,
-      "position": [2670, 180],
+      "position": [
+        224,
+        0
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "zHhDXzSbzhPXgh1S",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
@@ -262,14 +290,17 @@
         },
         "options": {}
       },
-      "id": "sheets-skipped",
+      "id": "e42a8a45-e3a0-46f3-b705-d46d1e86fb8c",
       "name": "Append to Sheets (Skipped)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.4,
-      "position": [2450, 420],
+      "position": [
+        0,
+        240
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "zHhDXzSbzhPXgh1S",
+          "id": "aldYCl67mumuXWzk",
           "name": "Google Sheets account"
         }
       }
@@ -311,14 +342,14 @@
     },
     "Loop Through Items": {
       "main": [
+        [],
         [
           {
             "node": "Claude Score Item",
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "Claude Score Item": {
@@ -406,12 +437,8 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Prague"
-  },
-  "meta": {
-    "instanceId": "n8n"
+    "binaryMode": "separate"
   }
 }
