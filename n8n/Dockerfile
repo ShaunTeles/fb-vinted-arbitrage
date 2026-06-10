@@ -1,4 +1,4 @@
-FROM n8nio/n8n:1.67.1
+FROM n8nio/n8n:2.25.7
 USER root
 ENV N8N_USER_FOLDER=/data
 EXPOSE 5678
