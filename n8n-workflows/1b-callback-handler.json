@@ -169,28 +169,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/post-to-vinted",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ fbId: $('Sheets: Read Row (Approve)').first().json['FB ID'], title: $('Sheets: Read Row (Approve)').first().json.Title, description: $('Sheets: Read Row (Approve)').first().json.Description, images: $('Sheets: Read Row (Approve)').first().json.Images, vintedPrice: $('Sheets: Read Row (Approve)').first().json['Vinted Price'], brand: $('Sheets: Read Row (Approve)').first().json.Brand, condition: $('Sheets: Read Row (Approve)').first().json.Condition, size: $('Sheets: Read Row (Approve)').first().json.Size }) }}",
-        "options": {}
-      },
-      "id": "8bdf73a7-4fb5-436b-8389-bba0a3773757",
-      "name": "Trigger Workflow 2: Post to Vinted",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        448,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '✅ Approved & queued for Vinted: ' + $('Sheets: Read Row (Approve)').first().json.Title }) }}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: $json.text, disable_web_page_preview: true }) }}",
         "options": {}
       },
       "id": "dee26185-2e6e-4e83-8cfe-d58023cff130",
@@ -260,6 +242,19 @@
         224,
         288
       ]
+    },
+    {
+      "name": "Build Listing Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const r = $('Sheets: Read Row (Approve)').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst condMap = { new_with_tags: 'Nové s visačkou', new_without_tags: 'Nové bez visačky', very_good: 'Velmi dobré', good: 'Dobré', satisfactory: 'Uspokojivé' };\nconst condition = condMap[r.Condition] || r.Condition || '';\nconst photos = String(r.Images || '').split(',').map(s => s.trim()).filter(Boolean);\nconst photoLines = (photos.length ? photos : [r['FB URL'] || '']).filter(Boolean).map((u, i) => `${i + 1}. ${esc(u)}`).join('\\n');\nconst text = [\n  '✅ <b>Approved — ready to list on Vinted</b>',\n  '',\n  'Open the Vinted app → <b>Nahrát předmět</b> and copy each field below (tap the boxed text to copy):',\n  '',\n  '📌 <b>Title</b>',\n  `<code>${esc(r.Title)}</code>`,\n  '',\n  '📝 <b>Description</b>',\n  `<code>${esc(r.Description)}</code>`,\n  '',\n  `💰 <b>Price:</b> <code>${esc(r['Vinted Price'])}</code> CZK`,\n  `🏷 <b>Brand:</b> ${esc(r.Brand)}`,\n  `📏 <b>Size:</b> ${esc(r.Size)}`,\n  `✨ <b>Condition:</b> ${esc(condition)}`,\n  '📁 <b>Category:</b> Děti › Oblečení',\n  '',\n  '📷 <b>Photos</b> (tap to open, then save to your phone):',\n  photoLines,\n].join('\\n');\nreturn [{ json: { text } }];"
+      },
+      "id": "dd092d4a-4d7e-403d-b67f-2ef336e2b46b"
     }
   ],
   "connections": {
@@ -329,18 +324,7 @@
       "main": [
         [
           {
-            "node": "Trigger Workflow 2: Post to Vinted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger Workflow 2: Post to Vinted": {
-      "main": [
-        [
-          {
-            "node": "Telegram: Confirm Approved",
+            "node": "Build Listing Message",
             "type": "main",
             "index": 0
           }
@@ -352,6 +336,17 @@
         [
           {
             "node": "Telegram: Confirm Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Listing Message": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Confirm Approved",
             "type": "main",
             "index": 0
           }

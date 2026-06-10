@@ -1,6 +1,10 @@
 # Session cookies - never commit these
 vinted-poster/sessions/
 
+# Local debug artifacts (screenshots/html dumps from poster testing)
+vinted-poster/debug/
+.playwright-mcp/
+
 # n8n local data (database, credentials, binary data)
 data/
 
