@@ -4,6 +4,7 @@
     {
       "parameters": {
         "updates": [
+          "message",
           "callback_query"
         ],
         "additionalFields": {}
@@ -252,9 +253,259 @@
         0
       ],
       "parameters": {
-        "jsCode": "const r = $('Sheets: Read Row (Approve)').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst condMap = { new_with_tags: 'Nové s visačkou', new_without_tags: 'Nové bez visačky', very_good: 'Velmi dobré', good: 'Dobré', satisfactory: 'Uspokojivé' };\nconst condition = condMap[r.Condition] || r.Condition || '';\nconst photos = String(r.Images || '').split(',').map(s => s.trim()).filter(Boolean);\nconst photoLines = (photos.length ? photos : [r['FB URL'] || '']).filter(Boolean).map((u, i) => `${i + 1}. ${esc(u)}`).join('\\n');\nconst text = [\n  '✅ <b>Approved — ready to list on Vinted</b>',\n  '',\n  'Open the Vinted app → <b>Nahrát předmět</b> and copy each field below (tap the boxed text to copy):',\n  '',\n  '📌 <b>Title</b>',\n  `<code>${esc(r.Title)}</code>`,\n  '',\n  '📝 <b>Description</b>',\n  `<code>${esc(r.Description)}</code>`,\n  '',\n  `💰 <b>Price:</b> <code>${esc(r['Vinted Price'])}</code> CZK`,\n  `🏷 <b>Brand:</b> ${esc(r.Brand)}`,\n  `📏 <b>Size:</b> ${esc(r.Size)}`,\n  `✨ <b>Condition:</b> ${esc(condition)}`,\n  '📁 <b>Category:</b> Děti › Oblečení',\n  '',\n  '📷 <b>Photos</b> (tap to open, then save to your phone):',\n  photoLines,\n].join('\\n');\nreturn [{ json: { text } }];"
+        "jsCode": "const r = $('Sheets: Read Row (Approve)').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst condMap = { new_with_tags: 'Nové s visačkou', new_without_tags: 'Nové bez visačky', very_good: 'Velmi dobré', good: 'Dobré', satisfactory: 'Uspokojivé' };\nconst condition = condMap[r.Condition] || r.Condition || '';\nconst photos = String(r.Images || '').split(',').map(s => s.trim()).filter(Boolean);\nconst photoLines = (photos.length ? photos : [r['FB URL'] || '']).filter(Boolean).map((u, i) => `${i + 1}. ${esc(u)}`).join('\\n');\nconst text = [\n  '✅ <b>Approved — ready to list on Vinted</b>',\n  '',\n  'Open the Vinted app → <b>Nahrát předmět</b> and copy each field below (tap the boxed text to copy):',\n  '',\n  '📌 <b>Title</b>',\n  `<code>${esc(r.Title)}</code>`,\n  '',\n  '📝 <b>Description</b>',\n  `<code>${esc(r.Description)}</code>`,\n  '',\n  `💰 <b>Price:</b> <code>${esc(r['Vinted Price'])}</code> CZK`,\n  `🏷 <b>Brand:</b> ${esc(r.Brand)}`,\n  `📏 <b>Size:</b> ${esc(r.Size)}`,\n  `✨ <b>Condition:</b> ${esc(condition)}`,\n  '📁 <b>Category:</b> Děti › Oblečení',\n  '',\n  '📷 <b>Photos</b> (tap to open, then save to your phone):',\n  photoLines,\n  '',\n  `🆔 Ref: <code>${esc(r['FB ID'])}</code>`,\n  '✍️ When listed, reply to this message with the Vinted link.',\n].join('\\n');\nreturn [{ json: { text } }];"
       },
       "id": "dd092d4a-4d7e-403d-b67f-2ef336e2b46b"
+    },
+    {
+      "id": "router-btn",
+      "name": "Is Button Tap?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        144
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.callback_query !== undefined ? 'yes' : 'no' }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "parse-vlink",
+      "name": "Parse Vinted Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        364
+      ],
+      "parameters": {
+        "jsCode": "const u = $('Telegram Trigger').first().json;\nconst msg = u.message;\nif (!msg) return [];\nconst chatId = String((msg.chat && msg.chat.id) || '');\nif (chatId !== String($env.TELEGRAM_CHAT_ID)) return [];\nconst text = msg.text || '';\nconst idMatch = text.match(/vinted\\.[a-z.]+\\/items\\/(\\d+)/i);\nif (!idMatch) return [{ json: { mode: 'help', chatId } }];\nconst vintedId = idMatch[1];\nconst urlMatch = text.match(/https?:\\/\\/\\S*vinted\\.[a-z.]+\\/items\\/\\d+\\S*/i);\nconst vintedUrl = urlMatch ? urlMatch[0].replace(/^http(s)?:\\/\\//i, 'https://') : ('https://www.vinted.cz/items/' + vintedId);\nlet refFbId = '', refTitle = '';\nconst rt = (msg.reply_to_message && msg.reply_to_message.text) || '';\nconst refMatch = rt.match(/Ref: (\\S+)/);\nif (refMatch) {\n  refFbId = refMatch[1];\n} else {\n  const lines = rt.split('\\n');\n  const i = lines.findIndex(l => l.indexOf('Title') >= 0 && l.indexOf('\\u{1F4CC}') >= 0 || l.trim() === '\\u{1F4CC} Title');\n  if (i >= 0 && lines[i+1]) refTitle = lines[i+1].trim();\n}\nreturn [{ json: { mode: 'file', chatId, vintedId, vintedUrl, refFbId, refTitle } }];"
+      }
+    },
+    {
+      "id": "got-link",
+      "name": "Got Vinted Link?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        364
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.mode === 'file' ? 'yes' : 'no' }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "tg-help",
+      "name": "Telegram: Help Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        524
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '🤖 To file a listed item, send me its Vinted link (vinted.cz/items/…) — best as a reply to that item\\'s ✅ card.' }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "read-all-rows",
+      "name": "Sheets: Read All Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        364
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aldYCl67mumuXWzk",
+          "name": "Google Sheets account"
+        }
+      },
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Items",
+          "mode": "name"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "match-row",
+      "name": "Match Target Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        364
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Parse Vinted Link').first().json;\nconst rows = $input.all().map(r => r.json).filter(r => r['FB ID']);\nlet target = null;\nif (p.refFbId) target = rows.find(r => String(r['FB ID']).trim() === p.refFbId);\nif (!target && p.refTitle) target = rows.find(r => String(r.Title || '').trim() === p.refTitle);\nif (!target) {\n  const cand = rows.filter(r => String(r.Status || '').trim() === 'Approved' && !String(r['Vinted ID'] || '').trim());\n  target = cand[cand.length - 1];\n}\nif (!target) return [{ json: { found: 'no', chatId: p.chatId } }];\nreturn [{ json: { found: 'yes', chatId: p.chatId, fbId: String(target['FB ID']),\n  title: String(target.Title || ''), vintedId: p.vintedId, vintedUrl: p.vintedUrl } }];"
+      }
+    },
+    {
+      "id": "row-found",
+      "name": "Row Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        200,
+        364
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "tg-notfound",
+      "name": "Telegram: Not Found",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        380,
+        524
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '⚠️ I could not find an approved item to attach that Vinted link to. Reply directly to the item\\'s ✅ card and I will file it.' }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "set-listed",
+      "name": "Sheets: Set Listed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        380,
+        364
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aldYCl67mumuXWzk",
+          "name": "Google Sheets account"
+        }
+      },
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Items",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "FB ID": "={{ $json.fbId }}",
+            "Vinted ID": "={{ $json.vintedId }}",
+            "Vinted URL": "={{ $json.vintedUrl }}",
+            "Status": "Listed"
+          },
+          "matchingColumns": [
+            "FB ID"
+          ],
+          "schema": []
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "tg-filed",
+      "name": "Telegram: Confirm Filed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        364
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: '📎 <b>Filed!</b>\\n\\n📦 ' + String($('Match Target Row').first().json.title).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '\\n🔗 Vinted ID: <b>' + $('Match Target Row').first().json.vintedId + '</b>\\n✅ Status set to Listed — sale monitoring is ON for this item.' }) }}",
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -262,7 +513,7 @@
       "main": [
         [
           {
-            "node": "Answer Callback Query",
+            "node": "Is Button Tap?",
             "type": "main",
             "index": 0
           }
@@ -347,6 +598,104 @@
         [
           {
             "node": "Telegram: Confirm Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Button Tap?": {
+      "main": [
+        [
+          {
+            "node": "Answer Callback Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Vinted Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Vinted Link": {
+      "main": [
+        [
+          {
+            "node": "Got Vinted Link?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Got Vinted Link?": {
+      "main": [
+        [
+          {
+            "node": "Sheets: Read All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram: Help Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets: Read All Rows": {
+      "main": [
+        [
+          {
+            "node": "Match Target Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Target Row": {
+      "main": [
+        [
+          {
+            "node": "Row Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Row Found?": {
+      "main": [
+        [
+          {
+            "node": "Sheets: Set Listed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram: Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets: Set Listed": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Confirm Filed",
             "type": "main",
             "index": 0
           }
