@@ -253,7 +253,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const r = $('Sheets: Read Row (Approve)').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst condMap = { new_with_tags: 'Nové s visačkou', new_without_tags: 'Nové bez visačky', very_good: 'Velmi dobré', good: 'Dobré', satisfactory: 'Uspokojivé' };\nconst condition = condMap[r.Condition] || r.Condition || '';\nconst photos = String(r.Images || '').split(',').map(s => s.trim()).filter(Boolean);\nconst photoLines = (photos.length ? photos : [r['FB URL'] || '']).filter(Boolean).map((u, i) => `${i + 1}. ${esc(u)}`).join('\\n');\nconst text = [\n  '✅ <b>Approved — ready to list on Vinted</b>',\n  '',\n  'Open the Vinted app → <b>Nahrát předmět</b> and copy each field below (tap the boxed text to copy):',\n  '',\n  '📌 <b>Title</b>',\n  `<code>${esc(r.Title)}</code>`,\n  '',\n  '📝 <b>Description</b>',\n  `<code>${esc(r.Description)}</code>`,\n  '',\n  `💰 <b>Price:</b> <code>${esc(r['Vinted Price'])}</code> CZK`,\n  `🏷 <b>Brand:</b> ${esc(r.Brand)}`,\n  `📏 <b>Size:</b> ${esc(r.Size)}`,\n  `✨ <b>Condition:</b> ${esc(condition)}`,\n  '📁 <b>Category:</b> Děti › Oblečení',\n  '',\n  '📷 <b>Photos</b> (tap to open, then save to your phone):',\n  photoLines,\n  '',\n  `🆔 Ref: <code>${esc(r['FB ID'])}</code>`,\n  '✍️ When listed, reply to this message with the Vinted link.',\n].join('\\n');\nreturn [{ json: { text } }];"
+        "jsCode": "const r = $('Sheets: Read Row (Approve)').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst condMap = { new_with_tags: 'Nové s visačkou', new_without_tags: 'Nové bez visačky', very_good: 'Velmi dobré', good: 'Dobré', satisfactory: 'Uspokojivé' };\nconst condition = condMap[r.Condition] || r.Condition || '';\nconst photos = String(r.Images || '').split(',').map(s => s.trim()).filter(Boolean);\nconst photoLines = (photos.length ? photos : [r['FB URL'] || '']).filter(Boolean).map((u, i) => `${i + 1}. ${esc(u)}`).join('\\n');\nconst text = [\n  '✅ <b>Approved — ready to list on Vinted</b>',\n  '',\n  'Open the Vinted app → <b>Nahrát předmět</b> and copy each field below (tap the boxed text to copy):',\n  '',\n  '📌 <b>Title</b>',\n  `<code>${esc(r.Title)}</code>`,\n  '',\n  '📝 <b>Description</b>',\n  `<code>${esc(r.Description)}</code>`,\n  '',\n  `💰 <b>Price:</b> <code>${esc(r['Vinted Price'])}</code> CZK`,\n  `🏷 <b>Brand:</b> ${esc(r.Brand)}`,\n  `📏 <b>Size:</b> ${esc(r.Size)}`,\n  `✨ <b>Condition:</b> ${esc(condition)}`,\n  '📁 <b>Category:</b> Děti › Oblečení',\n  `📦 <b>Package size:</b> ${esc(r['Package Size'] || 'S')} — pick this when Vinted asks`,\n  '',\n  '📷 <b>Photos</b> (tap to open, then save to your phone):',\n  photoLines,\n  '',\n  `🆔 Ref: <code>${esc(r['FB ID'])}</code>`,\n  '✍️ When listed, reply to this message with the Vinted link.',\n].join('\\n');\nreturn [{ json: { text } }];"
       },
       "id": "dd092d4a-4d7e-403d-b67f-2ef336e2b46b"
     },
@@ -705,6 +705,7 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "errorWorkflow": "tnSsu6W7yvMZli20"
   }
 }

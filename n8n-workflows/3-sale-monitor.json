@@ -142,7 +142,7 @@
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: '🛒 <b>SOLD on Vinted — go buy it on Facebook NOW!</b>\\n\\n📦 ' + String($('Merge Data').first().json.title).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '\\n\\n💰 Buyer paid you: <b>' + $('Merge Data').first().json.salePrice + ' CZK</b>\\n🏷 Your cost on FB: <b>' + $('Merge Data').first().json.fbPrice + ' CZK</b>\\n📈 Profit: <b>' + $('Merge Data').first().json.profit + ' CZK</b>\\n\\n⚡ <b>Next steps:</b>\\n1. Tap the button → buy the item from the FB seller\\n2. Package it\\n3. Ship to your Vinted buyer' + (String($('Merge Data').first().json.fbUrl).indexOf('http') === 0 ? '' : '\\n\\n⚠️ No FB link on file for this item — check the sheet.'), reply_markup: { inline_keyboard: (String($('Merge Data').first().json.fbUrl).indexOf('http') === 0 ? [[ { text: '⚡ Open FB listing — BUY NOW', url: $('Merge Data').first().json.fbUrl } ]] : []) } }) }}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: '🛒 <b>SOLD on Vinted — go buy it on Facebook NOW!</b>\\n\\n📦 ' + String($('Merge Data').first().json.title).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '\\n\\n💰 Buyer paid you: <b>' + $('Merge Data').first().json.salePrice + ' CZK</b>\\n🏷 Your cost on FB: <b>' + $('Merge Data').first().json.fbPrice + ' CZK</b>\\n📈 Profit: <b>' + $('Merge Data').first().json.profit + ' CZK</b>\\n\\n⏱ <b>Clock is ticking:</b> Vinted gives you ~5 days to ship — buy the FB item TODAY.\\n\\n⚡ <b>Next steps:</b>\\n1. Tap the button → buy the item from the FB seller\\n2. Package it\\n3. Ship to your Vinted buyer' + (String($('Merge Data').first().json.fbUrl).indexOf('http') === 0 ? '' : '\\n\\n⚠️ No FB link on file for this item — check the sheet.'), reply_markup: { inline_keyboard: (String($('Merge Data').first().json.fbUrl).indexOf('http') === 0 ? [[ { text: '⚡ Open FB listing — BUY NOW', url: $('Merge Data').first().json.fbUrl } ]] : []) } }) }}",
         "options": {}
       },
       "id": "87a23aa2-b496-4f3e-9bdc-733436dc6e57",
@@ -214,6 +214,7 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "errorWorkflow": "tnSsu6W7yvMZli20"
   }
 }

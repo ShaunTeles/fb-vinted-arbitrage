@@ -70,7 +70,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({model: \"claude-haiku-4-5-20251001\", max_tokens: 256, messages: [{role: \"user\", content: \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: \" + $json.title + \"\\nPrice: \" + $json.price + \" CZK\\nDescription: \" + String($json.description || '').slice(0, 600) + \"\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at \" + ($json.price + 600) + \" CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n\" + '{\"score\": <1-10>, \"reason\": \"<one sentence>\", \"brand\": \"<brand or unknown>\", \"condition\": \"<new/very_good/good/fair>\", \"size\": \"<size or unknown>\"}'}]}) }}",
+        "jsonBody": "={{ JSON.stringify({model: \"claude-haiku-4-5-20251001\", max_tokens: 256, messages: [{role: \"user\", content: \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: \" + $json.title + \"\\nPrice: \" + $json.price + \" CZK\\nDescription: \" + String($json.description || '').slice(0, 600) + \"\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at \" + ($json.price + 600) + \" CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nVinted package size guide: S = fits a large envelope (single clothing item, under 1 kg), M = shoebox size (shoes, small clothing bundles, 1-2 kg), L = larger (big bundles, winter jackets, over 2 kg).\\n\\nRespond ONLY with valid JSON:\\n\" + '{\"score\": <1-10>, \"reason\": \"<one sentence>\", \"brand\": \"<brand or unknown>\", \"condition\": \"<new/very_good/good/fair>\", \"size\": \"<size or unknown>\", \"package_size\": \"<S/M/L>\"}'}]}) }}",
         "options": {}
       },
       "id": "4c3fb872-dd3e-43ae-8b5b-64d11f674e52",
@@ -176,7 +176,7 @@
         "url": "={{ 'https://api.telegram.org/bot' + $('Get Secrets').first().json.telegramToken + '/sendPhoto' }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chat_id: $('Get Secrets').first().json.telegramChatId, photo: $json.images[0], caption: '🛍 <b>' +\n  $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' +\n  $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n\\n<a href=\"' +\n  $json.fbUrl + '\">View on Facebook</a>', parse_mode: 'HTML', reply_markup: { inline_keyboard: [[ { text: '✅ Approve',\n  callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId } ]] } }) }}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $('Get Secrets').first().json.telegramChatId, photo: $json.images[0], caption: '🛍 <b>' +\n  $json.title + '</b>\\n\\n💰 FB: <b>' + $json.fbPrice + ' CZK</b> → Vinted: <b>' + $json.vintedPrice + ' CZK</b>\\n⭐ Score: ' +\n  $json.score + '/10\\n📝 ' + $json.reason + '\\n🏷 Brand: ' + $json.brand + '\\n📏 Size: ' + $json.size + '\\n📦 Package: ' + ($json.package_size || '?') + '\\n\\n<a href=\"' +\n  $json.fbUrl + '\">View on Facebook</a>', parse_mode: 'HTML', reply_markup: { inline_keyboard: [[ { text: '✅ Approve',\n  callback_data: 'approve:' + $json.fbId }, { text: '❌ Skip', callback_data: 'skip:' + $json.fbId } ]] } }) }}",
         "options": {}
       },
       "id": "209e8c3f-747e-4423-9d69-c7794d8809b5",
@@ -218,7 +218,8 @@
             "Seller Name": "={{ $('Set Computed Fields').first().json.sellerName }}",
             "Score": "={{ $('Set Computed Fields').first().json.score }}",
             "Score Reason": "={{ $('Set Computed Fields').first().json.reason }}",
-            "Status": "=Pending"
+            "Status": "=Pending",
+            "Package Size": "={{ $('Set Computed Fields').first().json.package_size || '' }}"
           },
           "matchingColumns": [],
           "schema": []
@@ -270,7 +271,8 @@
             "Seller Name": "={{ $json.sellerName }}",
             "Score": "={{ $json.score }}",
             "Score Reason": "={{ $json.reason }}",
-            "Status": "=Skipped - Low Score"
+            "Status": "=Skipped - Low Score",
+            "Package Size": "={{ $('Set Computed Fields').first().json.package_size || '' }}"
           },
           "matchingColumns": [],
           "schema": []
@@ -743,6 +745,8 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "errorWorkflow": "tnSsu6W7yvMZli20"
   }
 }

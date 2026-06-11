@@ -1,0 +1,50 @@
+{
+  "name": "0 - Error Alert",
+  "nodes": [
+    {
+      "id": "errtrig",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "errtg",
+      "name": "Telegram: Failure Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: '⚠️ <b>Workflow failed:</b> ' + ($json.workflow && $json.workflow.name || 'unknown') + '\\n' + (($json.execution && $json.execution.error && $json.execution.error.message) || '').slice(0, 300) + '\\n\\nOpen n8n to inspect: ' + (($json.execution && $json.execution.url) || 'https://n8n-production-924f.up.railway.app') }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Failure Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
