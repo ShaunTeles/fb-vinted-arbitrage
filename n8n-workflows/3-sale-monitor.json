@@ -22,13 +22,6 @@
         0,
         0
       ],
-      "pollTimes": {
-        "item": [
-          {
-            "mode": "everyMinute"
-          }
-        ]
-      },
       "credentials": {
         "gmailOAuth2": {
           "id": "CudzfvUbpaxGLmzF",
@@ -38,7 +31,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = [];\nconst emails = Array.isArray($input.all()) ? $input.all() : [$input.first()];\nfor (const email of emails) {\n  const subject = email.json.subject || '';\n  const snippet = email.json.snippet || '';\n  const body = email.json.text || email.json.html || '';\n\n  // Try to extract item title from subject (Vinted subjects are like \"Tvůj item 'TITLE' byl prodán\")\n  const titleMatch = subject.match(/'([^']+)'/) || subject.match(/\"([^\"]+)\"/);\n  const title = titleMatch ? titleMatch[1] : snippet.substring(0, 60);\n\n  // Try to extract price from body/snippet\n  const priceMatch = (body + snippet).match(/(\\d+)\\s*(?:Kč|CZK|czk|kč)/i);\n  const salePrice = priceMatch ? parseInt(priceMatch[1]) : 0;\n\n  // Try to extract Vinted item ID from email links\n  const vintedIdMatch = (body + snippet).match(/vinted\\.cz\\/items\\/(\\d+)/);\n  const vintedId = vintedIdMatch ? vintedIdMatch[1] : '';\n\n  items.push({ json: { title, salePrice, vintedId, emailSubject: subject, emailDate: email.json.date || new Date().toISOString() } });\n}\nreturn items;"
+        "jsCode": "const items = [];\nconst emails = Array.isArray($input.all()) ? $input.all() : [$input.first()];\nfor (const email of emails) {\n  const subject = email.json.subject || '';\n  const snippet = email.json.snippet || '';\n  const body = email.json.text || email.json.html || '';\n\n  // Try to extract item title from subject (Vinted subjects are like \"Tvůj item 'TITLE' byl prodán\")\n  const titleMatch = subject.match(/'([^']+)'/) || subject.match(/\"([^\"]+)\"/);\n  const title = titleMatch ? titleMatch[1] : snippet.substring(0, 60);\n\n  // Try to extract price from body/snippet\n  const priceMatch = (body + snippet).match(/(\\d+)\\s*(?:Kč|CZK|czk|kč)/i);\n  const salePrice = priceMatch ? parseInt(priceMatch[1]) : 0;\n\n  // Try to extract Vinted item ID from email links\n  const vintedIdMatch = (body + snippet).match(/vinted\\.cz\\/items\\/(\\d+)/);\n  const vintedId = vintedIdMatch ? vintedIdMatch[1] : '';\n\n  \n  // GUARD: only process genuine sale emails — must have a Vinted item ID\n  // (prevents newsletters/favorites from matching empty 'Vinted ID' sheet cells)\n  if (!vintedId) continue;\n  items.push({ json: { title, salePrice, vintedId, emailSubject: subject, emailDate: email.json.date || new Date().toISOString() } });\n}\nreturn items;"
       },
       "id": "3d905aa6-a284-489b-918d-398d40010bef",
       "name": "Parse Email",
@@ -53,7 +46,7 @@
       "parameters": {
         "documentId": {
           "__rl": true,
-          "value": "={YOUR_GOOGLE_SHEET_ID}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -104,7 +97,7 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "={YOUR_GOOGLE_SHEET_ID}",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -149,7 +142,7 @@
         "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"🎉 <b>SOLD on Vinted!</b>\\n\\n📦 {{ $json.title }}\\n💰 Sale price: <b>{{ $json.salePrice }} CZK</b>\\n📈 Profit: <b>{{ $json.profit }} CZK</b>\\n\\n<b>Is the FB listing still available?</b>\\n🔗 <a href=\\\"{{ $json.fbUrl }}\\\">Check FB listing</a>\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": {{ JSON.stringify({ inline_keyboard: [[{ text: '✅ Still listed - message seller', callback_data: 'fb_active:' + $json.vintedId }, { text: '❌ No longer listed', callback_data: 'fb_gone:' + $json.vintedId }]] }) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: 'HTML', text: '🎉 <b>SOLD on Vinted!</b>\\n\\n📦 ' + String($('Merge Data').first().json.title).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '\\n💰 Sale price: <b>' + $('Merge Data').first().json.salePrice + ' CZK</b>\\n📈 Profit: <b>' + $('Merge Data').first().json.profit + ' CZK</b>' + '\\n\\n<b>Is the FB listing still available?</b>\\n🔗 <a href=\"' + $('Merge Data').first().json.fbUrl + '\">Check FB listing</a>', reply_markup: { inline_keyboard: [[ { text: '✅ Still listed - message seller', callback_data: 'fb_active:' + $('Merge Data').first().json.vintedId }, { text: '❌ No longer listed', callback_data: 'fb_gone:' + $('Merge Data').first().json.vintedId } ]] } }) }}",
         "options": {}
       },
       "id": "87a23aa2-b496-4f3e-9bdc-733436dc6e57",
