@@ -36,19 +36,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// MOCK DATA - replacing Apify scraper for testing\n  return [\n    {\n      json: {\n        id: \"mock-001\",\n        title: \"Zara Kids zimní bunda vel. 104\",\n        price: 350,\n        description: \"Krásná zimní bunda Zara Kids, vel. 104. Velmi dobrý stav, barva modrá.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-001\",\n        images: [\"https://picsum.photos/id/237/400/400.jpg\"],\n        sellerName: \"Jana Novákova\"\n      }\n    },\n    {\n      json: {\n        id: \"mock-002\",\n        title: \"H&M sada oblečení pro miminko 62-68\",\n        price: 200,\n        description: \"Sada 5 kusů oblečení H&M, vel. 62-68. Téměř nové, bez skvrn.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-002\",\n        images: [\"https://picsum.photos/id/1062/400/400.jpg\"],\n        sellerName: \"Petra Svobodová\"\n      }\n    },\n    {\n      json: {\n        id: \"mock-003\",\n        title: \"Nike tenisky dětské vel. 28\",\n        price: 450,\n        description: \"Originální Nike tenisky, vel. 28. Dobrý stav, podrážka neopotřebovaná.\",\n        url: \"https://www.facebook.com/marketplace/item/mock-003\",\n        images: [\"https://picsum.photos/id/1084/400/400.jpg\"],\n        sellerName: \"Martin Dvořák\"\n      }\n    }\n  ];"
-      },
-      "id": "852a2bef-5f78-49f7-abf9-566a642dee6c",
-      "name": "Mock FB Listings",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1760,
-        128
-      ]
-    },
-    {
-      "parameters": {
         "options": {}
       },
       "id": "fe538660-4689-41d9-bb28-fa3d274575f5",
@@ -83,7 +70,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 256,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: {{ $json.title }}\\nPrice: {{ $json.price }} CZK\\nDescription: {{ $json.description }}\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at {{ $json.price + 600 }} CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n{\\\"score\\\": <1-10>, \\\"reason\\\": \\\"<one sentence>\\\", \\\"brand\\\": \\\"<brand or unknown>\\\", \\\"condition\\\": \\\"<new/very_good/good/fair>\\\", \\\"size\\\": \\\"<size or unknown>\\\"}\"\n  }]\n}",
+        "jsonBody": "={{ JSON.stringify({model: \"claude-haiku-4-5-20251001\", max_tokens: 256, messages: [{role: \"user\", content: \"You are an arbitrage scoring assistant. Score this Facebook Marketplace kids' clothing listing for resale on Vinted.cz Czech Republic.\\n\\nTitle: \" + $json.title + \"\\nPrice: \" + $json.price + \" CZK\\nDescription: \" + String($json.description || '').slice(0, 600) + \"\\n\\nScore 1-10 based on:\\n1. Is the FB price competitive/good value for what it is?\\n2. Will this item sell quickly on Vinted at \" + ($json.price + 600) + \" CZK?\\n\\nFast-selling brands: Zara Kids, H&M, Next, Nike, Adidas, Marks & Spencer, Tommy Hilfiger, Boss Baby, Mayoral, Lego Wear, Reima, Columbia, Petit Bateau\\n\\nRespond ONLY with valid JSON:\\n\" + '{\"score\": <1-10>, \"reason\": \"<one sentence>\", \"brand\": \"<brand or unknown>\", \"condition\": \"<new/very_good/good/fair>\", \"size\": \"<size or unknown>\"}'}]}) }}",
         "options": {}
       },
       "id": "4c3fb872-dd3e-43ae-8b5b-64d11f674e52",
@@ -304,6 +291,222 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "id": "apify-start-run",
+      "name": "Start Apify Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1824,
+        128
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/runs?token={{ $env.APIFY_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"startUrls\": [{\"url\": \"https://www.facebook.com/marketplace/prague/search?query=d%C4%9Btsk%C3%A9%20oble%C4%8Den%C3%AD&maxPrice=500&sortBy=creation_time_descend\"}], \"resultsLimit\": 12, \"includeListingDetails\": true}",
+        "options": {}
+      }
+    },
+    {
+      "id": "apify-wait",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1648,
+        128
+      ],
+      "webhookId": "a3f1c2d4-7b8e-4f55-9c01-wf1apifywait",
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 30,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "apify-check-status",
+      "name": "Check Run Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1472,
+        128
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.data.id }}?token={{ $env.APIFY_API_KEY }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "apify-run-finished",
+      "name": "Run Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        128
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "apify-run-failed",
+      "name": "Run Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        336
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f1",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "FAILED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "f2",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "TIMED-OUT",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "f3",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "ABORTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "apify-fail-stop",
+      "name": "Stop With Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        336
+      ],
+      "parameters": {
+        "jsCode": "const status = $json.data && $json.data.status;\nthrow new Error('Apify scrape did not succeed. Run status: ' + status);"
+      }
+    },
+    {
+      "id": "apify-get-listings",
+      "name": "Get Listings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1296,
+        -80
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.data.id }}/dataset/items?token={{ $env.APIFY_API_KEY }}&clean=1",
+        "options": {}
+      }
+    },
+    {
+      "id": "normalize-listings",
+      "name": "Normalize Listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "// Map Apify facebook-marketplace-scraper output to the canonical item shape\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  const photos = (j.listingPhotos || [])\n    .map(p => p && p.image && p.image.uri)\n    .filter(Boolean);\n  if (!photos.length && j.primaryListingPhoto && j.primaryListingPhoto.photo_image_url) {\n    photos.push(j.primaryListingPhoto.photo_image_url);\n  }\n  if (!j.id || !j.listingTitle) continue;\n  out.push({ json: {\n    id: String(j.id),\n    title: j.listingTitle || '',\n    price: Number((j.listingPrice && j.listingPrice.amount) || 0),\n    description: (j.description && j.description.text) || '',\n    url: j.itemUrl || ('https://www.facebook.com/marketplace/item/' + j.id + '/'),\n    images: photos.slice(0, 3),\n    sellerName: ''\n  }});\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "get-known-fb-ids",
+      "name": "Get Known FB IDs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -944,
+        -80
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aldYCl67mumuXWzk",
+          "name": "Google Sheets account"
+        }
+      },
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Items",
+          "mode": "name"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "filter-new-items",
+      "name": "Filter New Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "// Drop listings whose FB ID is already in the Google Sheet\nconst listings = $('Normalize Listings').all().map(i => i.json);\nconst known = new Set();\nfor (const row of $input.all()) {\n  const v = row.json['FB ID'];\n  if (v !== undefined && v !== null && String(v).trim() !== '') {\n    known.add(String(v).trim());\n  }\n}\nconst fresh = listings.filter(l => !known.has(String(l.id)));\nreturn fresh.map(j => ({ json: j }));"
+      }
     }
   ],
   "connections": {
@@ -322,18 +525,7 @@
       "main": [
         [
           {
-            "node": "Mock FB Listings",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mock FB Listings": {
-      "main": [
-        [
-          {
-            "node": "Loop Through Items",
+            "node": "Start Apify Run",
             "type": "main",
             "index": 0
           }
@@ -435,10 +627,122 @@
           }
         ]
       ]
+    },
+    "Start Apify Run": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "Check Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Run Status": {
+      "main": [
+        [
+          {
+            "node": "Run Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Finished?": {
+      "main": [
+        [
+          {
+            "node": "Get Listings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Run Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Failed?": {
+      "main": [
+        [
+          {
+            "node": "Stop With Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Listings": {
+      "main": [
+        [
+          {
+            "node": "Normalize Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Listings": {
+      "main": [
+        [
+          {
+            "node": "Get Known FB IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Known FB IDs": {
+      "main": [
+        [
+          {
+            "node": "Filter New Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   }
 }
